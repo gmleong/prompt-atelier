@@ -42,6 +42,8 @@ const el = {
   imageDropZone:   $("#imageDropZone"),
   imagePreview:    $("#imagePreview"),
   removeImageBtn:  $("#removeImage"),
+  // Refresh
+  refreshBtn:      $("#refreshBtn"),
   // Settings
   settingsBtn:     $("#settingsBtn"),
   settingsOverlay: $("#settingsOverlay"),
@@ -463,6 +465,14 @@ el.imageDropZone.addEventListener("drop", async (e) => {
 el.removeImageBtn.addEventListener("click", () => {
   clearImage();
   syncPreviewFromForm();
+});
+
+/* ── Refresh ────────────────────────────────────────────────── */
+el.refreshBtn.addEventListener("click", async () => {
+  el.refreshBtn.style.animation = "spin 0.6s ease";
+  await reloadPrompts(state.activeId);
+  setTimeout(() => el.refreshBtn.style.animation = "", 600);
+  toast("已同步", "info");
 });
 
 /* ── Settings ───────────────────────────────────────────────── */
