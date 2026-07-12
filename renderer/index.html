@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Prompt Atelier</title>
-    <meta name="description" content="本地提示词库工作台" />
+    <title>提示词助手</title>
+    <meta name="description" content="提示词助手 — 本地提示词库工作台" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -25,10 +25,7 @@
       <header class="titlebar" role="banner">
         <div class="titlebar__traffic" aria-hidden="true"></div>
         <div class="titlebar__center">
-          <span class="titlebar__mark" aria-hidden="true">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
-          </span>
-          <h1 class="titlebar__title">Prompt Atelier</h1>
+          <h1 class="titlebar__title">提示词助手</h1>
         </div>
         <div class="titlebar__actions">
           <button id="themeToggle" class="icon-btn" type="button" aria-label="切换深色模式" title="切换深色模式">
@@ -58,7 +55,6 @@
       <!-- ═══ Card Grid (首屏) ═══ -->
       <main class="main-scroll">
         <div class="section-head">
-          <p class="overline">Library</p>
           <span id="resultCount" class="badge" aria-live="polite"></span>
         </div>
         <div id="promptList" class="card-grid" role="listbox" aria-label="提示词列表"></div>

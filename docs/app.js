@@ -576,3 +576,17 @@ document.addEventListener("keydown", (e) => {
 /* ── Init ───────────────────────────────────────────────────── */
 initTheme();
 reloadPrompts();
+
+// Background sync polling (for PWA / multi-device)
+setInterval(async () => {
+  if (state.editorOpen) return; // don't refresh while editing
+  try {
+    const fresh = await window.promptStore.list();
+    const same = JSON.stringify(fresh) === JSON.stringify(state.prompts);
+    if (!same) {
+      state.prompts = fresh;
+      renderCategories();
+      renderList();
+    }
+  } catch { /* ignore */ }
+}, 10000);
