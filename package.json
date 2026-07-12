@@ -4,7 +4,8 @@
   "description": "Desktop MVP for managing prompt snippets",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "deploy": "node deploy.js"
   },
   "devDependencies": {
     "electron": "^31.0.2"
