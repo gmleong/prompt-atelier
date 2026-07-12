@@ -8,6 +8,5 @@ contextBridge.exposeInMainWorld("promptStore", {
 
 contextBridge.exposeInMainWorld("appConfig", {
   get: () => ipcRenderer.invoke("config:get"),
-  save: (cfg) => ipcRenderer.invoke("config:save", cfg),
-  ensureGist: (token) => ipcRenderer.invoke("config:ensure-gist", token)
+  save: (cfg) => ipcRenderer.invoke("config:save", cfg)
 });

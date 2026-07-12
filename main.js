@@ -1,10 +1,10 @@
 const { app, BrowserWindow, ipcMain, nativeTheme, nativeImage } = require("electron");
 const fs = require("fs");
 const path = require("path");
+const COS = require("cos-nodejs-sdk-v5");
 
 const DATA_FILE = "prompts.json";
 const CONFIG_FILE = "config.json";
-const GIST_API = "https://api.github.com/gists";
 
 /* ── Config ──────────────────────────────────────────────────── */
 function getConfigPath() {
@@ -20,39 +20,51 @@ function readConfig() {
   try {
     if (fs.existsSync(file)) return JSON.parse(fs.readFileSync(file, "utf8"));
   } catch { /* ignore */ }
-  return { token: "", gistId: "" };
+  return { secretId: "", secretKey: "", bucket: "", region: "ap-guangzhou" };
 }
 
 function writeConfig(cfg) {
   fs.writeFileSync(getConfigPath(), JSON.stringify(cfg, null, 2), "utf8");
 }
 
-/* ── Gist API ────────────────────────────────────────────────── */
-async function gistFetch(gistId, token, method = "GET", body = null) {
-  const opts = {
-    method,
-    headers: {
-      Authorization: `token ${token}`,
-      Accept: "application/vnd.github.v3+json",
-      "Content-Type": "application/json",
-      "User-Agent": "Prompt-Atelier"
-    }
-  };
-  if (body) opts.body = JSON.stringify(body);
-  const res = await fetch(`${GIST_API}/${gistId}`, opts);
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`Gist API ${res.status}: ${text.slice(0, 200)}`);
-  }
-  return res.json();
+function getCos() {
+  const cfg = readConfig();
+  if (!cfg.secretId || !cfg.secretKey) return null;
+  return new COS({
+    SecretId: cfg.secretId,
+    SecretKey: cfg.secretKey
+  });
 }
 
-function parsePromptsFromGist(gist) {
-  try {
-    const file = gist.files && gist.files[DATA_FILE];
-    if (file && file.content) return JSON.parse(file.content);
-  } catch { /* ignore */ }
-  return null;
+function cosGet(cfg) {
+  return new Promise((resolve, reject) => {
+    const cos = getCos();
+    if (!cos) return reject(new Error("COS 未配置"));
+    cos.getObject({
+      Bucket: cfg.bucket, Region: cfg.region, Key: DATA_FILE
+    }, (err, data) => {
+      if (err) return reject(err);
+      try {
+        resolve(JSON.parse(data.Body.toString("utf8")));
+      } catch {
+        resolve(null);
+      }
+    });
+  });
+}
+
+function cosPut(cfg, prompts) {
+  return new Promise((resolve, reject) => {
+    const cos = getCos();
+    if (!cos) return reject(new Error("COS 未配置"));
+    cos.putObject({
+      Bucket: cfg.bucket, Region: cfg.region, Key: DATA_FILE,
+      Body: JSON.stringify(prompts, null, 2)
+    }, (err) => {
+      if (err) return reject(err);
+      resolve();
+    });
+  });
 }
 
 /* ── Data: read / write ──────────────────────────────────────── */
@@ -121,65 +133,32 @@ function writeLocalPrompts(prompts) {
 }
 
 /* ── Local-first, instant response ───────────────────────────── */
-const gistPushQueue = [];
-let gistPushing = false;
 
-// Read: always return local instantly, pull Gist in background
 function readPromptsNow() {
   return readLocalPrompts();
 }
 
-function pullFromGist() {
+function pullFromCOS() {
   const cfg = readConfig();
-  if (!cfg.token || !cfg.gistId) return;
-  gistFetch(cfg.gistId, cfg.token).then(gist => {
-    const prompts = parsePromptsFromGist(gist);
+  if (!cfg.secretId || !cfg.bucket) return;
+  cosGet(cfg).then(prompts => {
     if (prompts) writeLocalPrompts(prompts);
-  }).catch(err => console.error("Gist pull failed:", err.message));
+  }).catch(err => console.error("COS pull failed:", err.message));
 }
 
-// Write: save locally now, push to Gist immediately in background
-async function pushToGistNow(prompts) {
+async function pushToCOSNow(prompts) {
   const cfg = readConfig();
-  if (!cfg.token || !cfg.gistId) return;
+  if (!cfg.secretId || !cfg.bucket) return;
   try {
-    await gistFetch(cfg.gistId, cfg.token, "PATCH", {
-      files: { [DATA_FILE]: { content: JSON.stringify(prompts, null, 2) } }
-    });
+    await cosPut(cfg, prompts);
   } catch (err) {
-    console.error("Gist push failed:", err.message);
+    console.error("COS push failed:", err.message);
   }
 }
 
 function writePromptsNow(prompts) {
   writeLocalPrompts(prompts);
-  pushToGistNow(prompts); // fire-and-forget, no delay
-}
-
-async function ensureGist(token) {
-  // Create a new Gist with seed data
-  const seed = seedPrompts();
-  const body = {
-    description: "Prompt Atelier — 提示词库数据",
-    public: false,
-    files: { [DATA_FILE]: { content: JSON.stringify(seed, null, 2) } }
-  };
-  const res = await fetch(GIST_API, {
-    method: "POST",
-    headers: {
-      Authorization: `token ${token}`,
-      Accept: "application/vnd.github.v3+json",
-      "Content-Type": "application/json",
-      "User-Agent": "Prompt-Atelier"
-    },
-    body: JSON.stringify(body)
-  });
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`Create Gist failed ${res.status}: ${text.slice(0, 200)}`);
-  }
-  const gist = await res.json();
-  return gist.id;
+  pushToCOSNow(prompts);
 }
 
 /* ── Window ──────────────────────────────────────────────────── */
@@ -213,21 +192,10 @@ ipcMain.handle("config:save", async (_event, cfg) => {
   return { ok: true };
 });
 
-ipcMain.handle("config:ensure-gist", async (_event, token) => {
-  try {
-    const gistId = await ensureGist(token);
-    const cfg = { token, gistId };
-    writeConfig(cfg);
-    return { ok: true, gistId };
-  } catch (err) {
-    return { ok: false, error: err.message };
-  }
-});
-
 /* ── IPC: Prompts ────────────────────────────────────────────── */
 ipcMain.handle("prompts:list", async () => {
-  // Return local instantly, pull Gist in background
-  pullFromGist();
+  // Return local instantly, pull COS in background
+  pullFromCOS();
   return readPromptsNow();
 });
 

@@ -50,9 +50,10 @@ const el = {
   settingsBackdrop:$("#settingsBackdrop"),
   closeSettings:   $("#closeSettings"),
   settingsForm:    $("#settingsForm"),
-  ghToken:         $("#ghToken"),
-  ghGistId:        $("#ghGistId"),
-  autoCreateBtn:   $("#autoCreateBtn"),
+  cosSecretId:     $("#cosSecretId"),
+  cosSecretKey:    $("#cosSecretKey"),
+  cosBucket:       $("#cosBucket"),
+  cosRegion:       $("#cosRegion"),
   settingsStatus:  $("#settingsStatus")
 };
 
@@ -491,8 +492,10 @@ function closeSettingsPanel() {
 async function loadSettingsForm() {
   try {
     const cfg = await window.appConfig.get();
-    el.ghToken.value = cfg.token || "";
-    el.ghGistId.value = cfg.gistId || "";
+    el.cosSecretId.value = cfg.secretId || "";
+    el.cosSecretKey.value = cfg.secretKey || "";
+    el.cosBucket.value = cfg.bucket || "";
+    el.cosRegion.value = cfg.region || "ap-guangzhou";
   } catch (err) {
     // appConfig not available (e.g. in PWA mode) — ignore
   }
@@ -502,48 +505,21 @@ el.settingsBtn.addEventListener("click", openSettings);
 el.closeSettings.addEventListener("click", closeSettingsPanel);
 el.settingsBackdrop.addEventListener("click", closeSettingsPanel);
 
-el.autoCreateBtn.addEventListener("click", async () => {
-  const token = el.ghToken.value.trim();
-  if (!token) {
-    el.settingsStatus.textContent = "请先输入 GitHub Token";
-    el.settingsStatus.className = "settings-status settings-status--error";
-    return;
-  }
-  el.autoCreateBtn.disabled = true;
-  el.settingsStatus.textContent = "正在创建 Gist…";
-  el.settingsStatus.className = "settings-status settings-status--info";
-  try {
-    const result = await window.appConfig.ensureGist(token);
-    if (result.ok) {
-      el.ghGistId.value = result.gistId;
-      el.settingsStatus.textContent = "Gist 创建成功！";
-      el.settingsStatus.className = "settings-status settings-status--success";
-      await window.appConfig.save({ token, gistId: result.gistId });
-      // Reload data from new Gist
-      await reloadPrompts("");
-      toast("同步已就绪", "success");
-    } else {
-      throw new Error(result.error);
-    }
-  } catch (err) {
-    el.settingsStatus.textContent = `创建失败：${err.message}`;
-    el.settingsStatus.className = "settings-status settings-status--error";
-  } finally {
-    el.autoCreateBtn.disabled = false;
-  }
-});
-
 el.settingsForm.addEventListener("submit", async (e) => {
   e.preventDefault();
-  const token = el.ghToken.value.trim();
-  const gistId = el.ghGistId.value.trim();
-  if (!token) {
-    el.settingsStatus.textContent = "请输入 GitHub Token";
+  const cfg = {
+    secretId: el.cosSecretId.value.trim(),
+    secretKey: el.cosSecretKey.value.trim(),
+    bucket: el.cosBucket.value.trim(),
+    region: el.cosRegion.value.trim() || "ap-guangzhou"
+  };
+  if (!cfg.secretId || !cfg.secretKey || !cfg.bucket) {
+    el.settingsStatus.textContent = "请填写完整的 COS 配置";
     el.settingsStatus.className = "settings-status settings-status--error";
     return;
   }
   try {
-    await window.appConfig.save({ token, gistId });
+    await window.appConfig.save(cfg);
     el.settingsStatus.textContent = "设置已保存";
     el.settingsStatus.className = "settings-status settings-status--success";
     await reloadPrompts("");

@@ -170,21 +170,28 @@
           </button>
         </div>
         <div class="overlay__scroll">
-          <p class="settings-hint">通过 GitHub Gist 同步数据到手机。需要创建一个 <a href="https://github.com/settings/tokens" target="_blank">Personal Access Token</a>，勾选 <strong>gist</strong> 权限。</p>
+          <p class="settings-hint">通过腾讯云 COS 同步数据。在 <a href="https://console.cloud.tencent.com/cam/capi" target="_blank">腾讯云 API 密钥</a> 获取 SecretId 和 SecretKey，然后创建 COS 存储桶。</p>
           <form id="settingsForm" class="editor-form">
             <div class="field">
-              <label class="field__label" for="ghToken">GitHub Token</label>
-              <input id="ghToken" type="password" placeholder="ghp_xxxxxxxxxxxx" autocomplete="off" />
+              <label class="field__label" for="cosSecretId">SecretId</label>
+              <input id="cosSecretId" type="password" placeholder="AKIDxxxxxxxx" autocomplete="off" />
             </div>
             <div class="field">
-              <label class="field__label" for="ghGistId">Gist ID</label>
-              <input id="ghGistId" type="text" placeholder="留空自动创建" readonly />
+              <label class="field__label" for="cosSecretKey">SecretKey</label>
+              <input id="cosSecretKey" type="password" placeholder="xxxxxxxx" autocomplete="off" />
+            </div>
+            <div class="form-row form-row--2col">
+              <div class="field">
+                <label class="field__label" for="cosBucket">Bucket</label>
+                <input id="cosBucket" type="text" placeholder="mybucket-1250000000" />
+              </div>
+              <div class="field">
+                <label class="field__label" for="cosRegion">Region</label>
+                <input id="cosRegion" type="text" placeholder="ap-guangzhou" />
+              </div>
             </div>
             <div class="form-actions">
-              <button type="button" id="autoCreateBtn" class="btn btn--primary btn--full">自动创建 Gist</button>
-            </div>
-            <div class="form-actions">
-              <button type="submit" class="btn btn--ghost btn--full">保存设置</button>
+              <button type="submit" class="btn btn--primary btn--full">保存设置</button>
             </div>
             <p id="settingsStatus" class="settings-status"></p>
           </form>
@@ -195,6 +202,8 @@
     <!-- Toast -->
     <div id="toastContainer" class="toast-container" aria-live="polite"></div>
 
+    <script src="https://cdn.jsdelivr.net/npm/cos-js-sdk-v5/dist/cos-js-sdk-v5.min.js"></script>
+    <script src="./cos-api.js"></script>
     <script src="./app.js"></script>
   </body>
 </html>
