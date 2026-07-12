@@ -1,7 +1,7 @@
 const { app, BrowserWindow, nativeTheme, nativeImage } = require("electron");
 const path = require("path");
 
-const APP_URL = "https://gmleong.github.io/prompt-atelier/";
+const APP_URL = "https://prompt-hub-1302053645.cos.ap-guangzhou.myqcloud.com/";
 
 function createWindow() {
   const win = new BrowserWindow({

@@ -4,7 +4,7 @@
    ═══════════════════════════════════════════════════════════════ */
 
 // 部署时改成你自己的 COS 存储桶地址
-const BUCKET_URL = "https://your-bucket-1250000000.cos.ap-guangzhou.myqcloud.com";
+const BUCKET_URL = "https://prompt-hub-1302053645.cos.ap-guangzhou.myqcloud.com";
 const DATA_KEY = "prompts.json";
 const DATA_URL = `${BUCKET_URL}/${DATA_KEY}`;
 
