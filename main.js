@@ -120,37 +120,51 @@ function writeLocalPrompts(prompts) {
   fs.writeFileSync(getDataPath(), JSON.stringify(prompts, null, 2), "utf8");
 }
 
-async function readPrompts() {
-  const cfg = readConfig();
-  if (cfg.token && cfg.gistId) {
-    try {
-      const gist = await gistFetch(cfg.gistId, cfg.token);
-      const prompts = parsePromptsFromGist(gist);
-      if (prompts) {
-        writeLocalPrompts(prompts); // update local cache
-        return prompts;
-      }
-    } catch (err) {
-      console.error("Gist read failed, falling back to local:", err.message);
-    }
-  }
+/* ── Local-first, instant response ───────────────────────────── */
+let gistPushTimer = null;
+let gistPullTimer = null;
+
+// Read: always return local instantly, pull Gist in background
+function readPromptsNow() {
   return readLocalPrompts();
 }
 
-async function writePrompts(prompts) {
+function pullFromGist() {
   const cfg = readConfig();
-  writeLocalPrompts(prompts); // always update local cache
+  if (!cfg.token || !cfg.gistId) return;
+  clearTimeout(gistPullTimer);
+  gistPullTimer = setTimeout(async () => {
+    try {
+      const gist = await gistFetch(cfg.gistId, cfg.token);
+      const prompts = parsePromptsFromGist(gist);
+      if (prompts) writeLocalPrompts(prompts);
+    } catch (err) {
+      console.error("Gist pull failed:", err.message);
+    }
+  }, 200);
+}
 
-  if (cfg.token && cfg.gistId) {
+// Write: save locally now, push to Gist in background (debounced)
+function writePromptsNow(prompts) {
+  writeLocalPrompts(prompts);
+  const cfg = readConfig();
+  if (!cfg.token || !cfg.gistId) return;
+  clearTimeout(gistPushTimer);
+  gistPushTimer = setTimeout(async () => {
     try {
       await gistFetch(cfg.gistId, cfg.token, "PATCH", {
         files: { [DATA_FILE]: { content: JSON.stringify(prompts, null, 2) } }
       });
     } catch (err) {
-      console.error("Gist write failed:", err.message);
-      throw err;
+      console.error("Gist push failed:", err.message);
     }
-  }
+  }, 300);
+}
+
+// Force flush pending push (called before reading from Gist)
+async function flushPush() {
+  clearTimeout(gistPushTimer);
+  // push is fire-and-forget; just ensure timer is cleared
 }
 
 async function ensureGist(token) {
@@ -222,11 +236,13 @@ ipcMain.handle("config:ensure-gist", async (_event, token) => {
 
 /* ── IPC: Prompts ────────────────────────────────────────────── */
 ipcMain.handle("prompts:list", async () => {
-  return readPrompts();
+  // Return local instantly, pull Gist in background
+  pullFromGist();
+  return readPromptsNow();
 });
 
 ipcMain.handle("prompts:save", async (_event, prompt) => {
-  const prompts = await readPrompts();
+  const prompts = readPromptsNow();
   const now = new Date().toISOString();
   const tags = Array.isArray(prompt.tags)
     ? prompt.tags.filter(Boolean)
@@ -251,14 +267,14 @@ ipcMain.handle("prompts:save", async (_event, prompt) => {
     prompts.unshift(nextPrompt);
   }
 
-  await writePrompts(prompts);
+  writePromptsNow(prompts); // instant local + background Gist push
   return prompts;
 });
 
 ipcMain.handle("prompts:delete", async (_event, id) => {
-  const prompts = await readPrompts();
+  const prompts = readPromptsNow();
   const filtered = prompts.filter((item) => item.id !== id);
-  await writePrompts(filtered);
+  writePromptsNow(filtered); // instant local + background Gist push
   return filtered;
 });
 
