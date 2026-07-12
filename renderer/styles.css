@@ -1003,8 +1003,8 @@ textarea {
 .settings-status--success { color: #16A34A; background: rgba(22, 163, 74, 0.08); }
 .settings-status--error   { color: var(--color-destructive); background: rgba(220, 38, 38, 0.06); }
 
-/* ── Responsive ──────────────────────────────────────────────── */
-@media (max-width: 480px) {
+/* ── Responsive (mobile only) ────────────────────────────────── */
+@media (max-width: 430px) {
   .shell {
     height: 100dvh;
   }
