@@ -203,6 +203,7 @@ function createWindow() {
     backgroundColor: nativeTheme.shouldUseDarkColors ? "#171717" : "#F5F5F5",
     titleBarStyle: "hiddenInset",
     trafficLightPosition: { x: 18, y: 18 },
+    icon: path.join(__dirname, "assets", "icon.icns"),
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,

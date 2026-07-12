@@ -1007,6 +1007,76 @@ textarea {
 .settings-status--success { color: #16A34A; background: rgba(22, 163, 74, 0.08); }
 .settings-status--error   { color: var(--color-destructive); background: rgba(220, 38, 38, 0.06); }
 
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .shell {
+    height: 100dvh;
+  }
+
+  .titlebar {
+    padding: 0 12px;
+    height: 48px;
+  }
+
+  .titlebar__center {
+    position: static;
+    transform: none;
+  }
+
+  .titlebar__title {
+    font-size: 14px;
+  }
+
+  .titlebar__traffic {
+    display: none;
+  }
+
+  .search-bar {
+    margin: 0 10px var(--space-sm);
+  }
+
+  .main-scroll {
+    padding: 0 10px var(--space-md);
+  }
+
+  .card-grid {
+    column-count: 1;
+  }
+
+  .prompt-card {
+    margin-bottom: var(--space-sm);
+  }
+
+  /* Editor: full-width panel */
+  .overlay__panel {
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    max-height: 90dvh;
+  }
+
+  .overlay__head {
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  .overlay__scroll {
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  .form-row--2col {
+    grid-template-columns: 1fr;
+  }
+
+  .fab {
+    bottom: 16px;
+    right: 16px;
+    width: 44px;
+    height: 44px;
+  }
+
+  .toast-container {
+    bottom: 80px;
+  }
+}
+
 /* ── Reduced Motion ─────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

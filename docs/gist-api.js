@@ -56,32 +56,46 @@ function parsePrompts(gist) {
   return null;
 }
 
+/* ── Background sync ──────────────────────────────────────────── */
+let pushTimer = null;
+
+function pushToGist(prompts) {
+  const cfg = getConfig();
+  if (!cfg.token || !cfg.gistId) return;
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(async () => {
+    try {
+      await gistFetch(cfg.gistId, cfg.token, "PATCH", {
+        files: { [DATA_FILE]: { content: JSON.stringify(prompts, null, 2) } }
+      });
+    } catch (err) {
+      console.error("Gist push failed:", err.message);
+    }
+  }, 300);
+}
+
 /* ── Public API (mirrors window.promptStore) ─────────────────── */
 const promptStore = {
   async list() {
+    // Return cached data instantly
+    const cached = readCache();
+    // Pull from Gist in background
     const cfg = getConfig();
     if (cfg.token && cfg.gistId) {
-      try {
-        const gist = await gistFetch(cfg.gistId, cfg.token);
+      gistFetch(cfg.gistId, cfg.token).then(gist => {
         const prompts = parsePrompts(gist);
-        if (prompts) {
-          cachePrompts(prompts);
-          return prompts;
-        }
-      } catch (err) {
-        console.error("Gist fetch failed:", err.message);
-      }
+        if (prompts) cachePrompts(prompts);
+      }).catch(err => console.error("Gist pull failed:", err.message));
     }
-    return readCache() || [];
+    return cached || [];
   },
 
   async save(prompt) {
     const cfg = getConfig();
     if (!cfg.token || !cfg.gistId) throw new Error("未配置 Gist");
 
-    // Read current state from Gist
-    const gist = await gistFetch(cfg.gistId, cfg.token);
-    let prompts = parsePrompts(gist) || [];
+    // Work on local cache
+    let prompts = readCache() || [];
     const now = new Date().toISOString();
     const tags = Array.isArray(prompt.tags) ? prompt.tags.filter(Boolean) : [];
 
@@ -104,10 +118,9 @@ const promptStore = {
       prompts.unshift(nextPrompt);
     }
 
-    await gistFetch(cfg.gistId, cfg.token, "PATCH", {
-      files: { [DATA_FILE]: { content: JSON.stringify(prompts, null, 2) } }
-    });
+    // Save locally instantly, push to Gist in background
     cachePrompts(prompts);
+    pushToGist(prompts);
     return prompts;
   },
 
@@ -115,14 +128,12 @@ const promptStore = {
     const cfg = getConfig();
     if (!cfg.token || !cfg.gistId) throw new Error("未配置 Gist");
 
-    const gist = await gistFetch(cfg.gistId, cfg.token);
-    let prompts = parsePrompts(gist) || [];
+    let prompts = readCache() || [];
     prompts = prompts.filter((item) => item.id !== id);
 
-    await gistFetch(cfg.gistId, cfg.token, "PATCH", {
-      files: { [DATA_FILE]: { content: JSON.stringify(prompts, null, 2) } }
-    });
+    // Save locally instantly, push to Gist in background
     cachePrompts(prompts);
+    pushToGist(prompts);
     return prompts;
   }
 };
