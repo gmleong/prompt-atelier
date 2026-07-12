@@ -121,8 +121,8 @@ function writeLocalPrompts(prompts) {
 }
 
 /* ── Local-first, instant response ───────────────────────────── */
-let gistPushTimer = null;
-let gistPullTimer = null;
+const gistPushQueue = [];
+let gistPushing = false;
 
 // Read: always return local instantly, pull Gist in background
 function readPromptsNow() {
@@ -132,39 +132,28 @@ function readPromptsNow() {
 function pullFromGist() {
   const cfg = readConfig();
   if (!cfg.token || !cfg.gistId) return;
-  clearTimeout(gistPullTimer);
-  gistPullTimer = setTimeout(async () => {
-    try {
-      const gist = await gistFetch(cfg.gistId, cfg.token);
-      const prompts = parsePromptsFromGist(gist);
-      if (prompts) writeLocalPrompts(prompts);
-    } catch (err) {
-      console.error("Gist pull failed:", err.message);
-    }
-  }, 200);
+  gistFetch(cfg.gistId, cfg.token).then(gist => {
+    const prompts = parsePromptsFromGist(gist);
+    if (prompts) writeLocalPrompts(prompts);
+  }).catch(err => console.error("Gist pull failed:", err.message));
 }
 
-// Write: save locally now, push to Gist in background (debounced)
-function writePromptsNow(prompts) {
-  writeLocalPrompts(prompts);
+// Write: save locally now, push to Gist immediately in background
+async function pushToGistNow(prompts) {
   const cfg = readConfig();
   if (!cfg.token || !cfg.gistId) return;
-  clearTimeout(gistPushTimer);
-  gistPushTimer = setTimeout(async () => {
-    try {
-      await gistFetch(cfg.gistId, cfg.token, "PATCH", {
-        files: { [DATA_FILE]: { content: JSON.stringify(prompts, null, 2) } }
-      });
-    } catch (err) {
-      console.error("Gist push failed:", err.message);
-    }
-  }, 300);
+  try {
+    await gistFetch(cfg.gistId, cfg.token, "PATCH", {
+      files: { [DATA_FILE]: { content: JSON.stringify(prompts, null, 2) } }
+    });
+  } catch (err) {
+    console.error("Gist push failed:", err.message);
+  }
 }
 
-// Force flush pending push (called before reading from Gist)
-async function flushPush() {
-  clearTimeout(gistPushTimer);
-  // push is fire-and-forget; just ensure timer is cleared
+function writePromptsNow(prompts) {
+  writeLocalPrompts(prompts);
+  pushToGistNow(prompts); // fire-and-forget, no delay
 }
 
 async function ensureGist(token) {
