@@ -168,20 +168,30 @@ input, select, textarea, button { font-family: var(--font-ui); }
   display: flex;
   align-items: center;
   height: 52px;
-  padding: 0 var(--space-md) 0 78px;
+  padding: 0 var(--space-md);
   -webkit-app-region: drag;
   user-select: none;
 }
 
 .titlebar__traffic {
-  display: none;
+  flex: 1;
 }
 
 .titlebar__center {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   flex: 1;
+}
+
+.titlebar__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  flex: 1;
+  -webkit-app-region: no-drag;
 }
 
 .titlebar__actions {
