@@ -1,23 +1,15 @@
 /* ═══════════════════════════════════════════════════════════════
-   COS Data Layer — 直接用腾讯云 COS 存储 prompts.json
-   Works on both desktop (Electron) and mobile (PWA)
+   COS Data Layer — 无认证，直接 REST 读写
+   存储桶需开启静态网站托管 + 公开读写权限
    ═══════════════════════════════════════════════════════════════ */
 
-const DATA_FILE = "prompts.json";
-const CFG_KEY = "prompt-atelier-config";
-
-function getConfig() {
-  try {
-    return JSON.parse(localStorage.getItem(CFG_KEY)) || { secretId: "", secretKey: "", bucket: "", region: "ap-guangzhou" };
-  } catch { return { secretId: "", secretKey: "", bucket: "", region: "ap-guangzhou" }; }
-}
-
-function saveConfigLocal(cfg) {
-  localStorage.setItem(CFG_KEY, JSON.stringify(cfg));
-}
+// 部署时改成你自己的 COS 存储桶地址
+const BUCKET_URL = "https://your-bucket-1250000000.cos.ap-guangzhou.myqcloud.com";
+const DATA_KEY = "prompts.json";
+const DATA_URL = `${BUCKET_URL}/${DATA_KEY}`;
 
 function cache(prompts) {
-  try { localStorage.setItem("prompts-cache", JSON.stringify(prompts)); } catch { /* ignore */ }
+  try { localStorage.setItem("prompts-cache", JSON.stringify(prompts)); } catch { /* */ }
 }
 
 function readCache() {
@@ -27,54 +19,33 @@ function readCache() {
   } catch { return null; }
 }
 
-function getCos() {
-  const cfg = getConfig();
-  if (!cfg.secretId || !cfg.secretKey) return null;
-  return new COS({ SecretId: cfg.secretId, SecretKey: cfg.secretKey });
-}
-
-function cosGet() {
-  return new Promise((resolve, reject) => {
-    const cos = getCos();
-    const cfg = getConfig();
-    if (!cos || !cfg.bucket) return reject(new Error("COS 未配置"));
-    cos.getObject({ Bucket: cfg.bucket, Region: cfg.region, Key: DATA_FILE }, (err, data) => {
-      if (err && err.statusCode === 404) return resolve([]);
-      if (err) return reject(err);
-      try { resolve(JSON.parse(data.Body)); } catch { resolve([]); }
-    });
+async function fetchJSON(url, opts = {}) {
+  const res = await fetch(url, {
+    ...opts,
+    headers: { "Content-Type": "application/json", ...(opts.headers || {}) }
   });
-}
-
-function cosPut(prompts) {
-  return new Promise((resolve, reject) => {
-    const cos = getCos();
-    const cfg = getConfig();
-    if (!cos || !cfg.bucket) return reject(new Error("COS 未配置"));
-    cos.putObject({
-      Bucket: cfg.bucket, Region: cfg.region, Key: DATA_FILE,
-      Body: JSON.stringify(prompts, null, 2)
-    }, (err) => { if (err) return reject(err); resolve(); });
-  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`${res.status}: ${text.slice(0, 100)}`);
+  }
+  return res.json();
 }
 
 /* ── Public API ──────────────────────────────────────────────── */
 const promptStore = {
   async list() {
     const cached = readCache();
-    const cfg = getConfig();
-    if (cfg.secretId && cfg.bucket) {
-      cosGet().then(p => { if (p) cache(p); })
-        .catch(err => console.error("COS pull:", err.message));
-    }
+    fetchJSON(DATA_URL).then(p => { if (Array.isArray(p)) cache(p); })
+      .catch(err => console.error("COS pull:", err.message));
     return cached || [];
   },
 
   async save(prompt) {
-    const cfg = getConfig();
-    if (!cfg.secretId || !cfg.bucket) throw new Error("请先配置 COS");
+    // Read latest from COS first
+    let prompts = [];
+    try { prompts = await fetchJSON(DATA_URL); } catch { /* use cache */ }
+    if (!Array.isArray(prompts)) prompts = readCache() || [];
 
-    let prompts = readCache() || [];
     const now = new Date().toISOString();
     const tags = Array.isArray(prompt.tags) ? prompt.tags.filter(Boolean) : [];
     const next = {
@@ -89,26 +60,26 @@ const promptStore = {
     const idx = prompts.findIndex((item) => item.id === next.id);
     if (idx >= 0) prompts[idx] = next; else prompts.unshift(next);
 
+    // Write back to COS
+    await fetchJSON(DATA_URL, { method: "PUT", body: JSON.stringify(prompts, null, 2) });
     cache(prompts);
-    cosPut(prompts).catch(err => console.error("COS push:", err.message));
     return prompts;
   },
 
   async remove(id) {
-    const cfg = getConfig();
-    if (!cfg.secretId || !cfg.bucket) throw new Error("请先配置 COS");
-
-    let prompts = readCache() || [];
+    let prompts = [];
+    try { prompts = await fetchJSON(DATA_URL); } catch { prompts = readCache() || []; }
     prompts = prompts.filter((item) => item.id !== id);
+    await fetchJSON(DATA_URL, { method: "PUT", body: JSON.stringify(prompts, null, 2) });
     cache(prompts);
-    cosPut(prompts).catch(err => console.error("COS push:", err.message));
     return prompts;
   }
 };
 
+// 移除设置面板依赖 — app 直接可用
 const appConfig = {
-  get() { return Promise.resolve(getConfig()); },
-  save(cfg) { saveConfigLocal(cfg); return Promise.resolve({ ok: true }); }
+  get() { return Promise.resolve({}); },
+  save() { return Promise.resolve({ ok: true }); }
 };
 
 window.promptStore = promptStore;

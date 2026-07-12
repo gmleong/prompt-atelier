@@ -170,31 +170,8 @@
           </button>
         </div>
         <div class="overlay__scroll">
-          <p class="settings-hint">使用腾讯云 COS 存储桶同步数据。在 <a href="https://console.cloud.tencent.com/cam/capi" target="_blank">API 密钥管理</a> 获取密钥。</p>
-          <form id="settingsForm" class="editor-form">
-            <div class="field">
-              <label class="field__label" for="cosSecretId">SecretId</label>
-              <input id="cosSecretId" type="password" placeholder="AKIDxxxxxxxx" autocomplete="off" />
-            </div>
-            <div class="field">
-              <label class="field__label" for="cosSecretKey">SecretKey</label>
-              <input id="cosSecretKey" type="password" placeholder="xxxxxxxx" autocomplete="off" />
-            </div>
-            <div class="form-row form-row--2col">
-              <div class="field">
-                <label class="field__label" for="cosBucket">Bucket</label>
-                <input id="cosBucket" type="text" placeholder="mybucket-1250000000" />
-              </div>
-              <div class="field">
-                <label class="field__label" for="cosRegion">Region</label>
-                <input id="cosRegion" type="text" placeholder="ap-guangzhou" />
-              </div>
-            </div>
-            <div class="form-actions">
-              <button type="submit" class="btn btn--primary btn--full">保存并同步</button>
-            </div>
-            <p id="settingsStatus" class="settings-status"></p>
-          </form>
+          <p class="settings-hint">数据存储在腾讯云 COS，多端自动同步。无需额外配置。</p>
+          <p id="settingsStatus" class="settings-status"></p>
         </div>
       </div>
     </div>
@@ -202,7 +179,6 @@
     <!-- Toast -->
     <div id="toastContainer" class="toast-container" aria-live="polite"></div>
 
-    <script src="https://cdn.jsdelivr.net/npm/cos-js-sdk-v5/dist/cos-js-sdk-v5.min.js"></script>
     <script src="./api.js"></script>
     <script src="./app.js"></script>
   </body>
