@@ -1,7 +1,7 @@
 const { app, BrowserWindow, nativeTheme, nativeImage } = require("electron");
 const path = require("path");
 
-const APP_URL = "https://prompt-hub-1302053645.cos.ap-guangzhou.myqcloud.com/";
+const APP_FILE = path.join(__dirname, "renderer", "index.html");
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -19,7 +19,7 @@ function createWindow() {
     }
   });
 
-  win.loadURL(APP_URL);
+  win.loadFile(APP_FILE);
 }
 
 /* ── App lifecycle ───────────────────────────────────────────── */

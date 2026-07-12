@@ -50,7 +50,10 @@ const el = {
   settingsBackdrop:$("#settingsBackdrop"),
   closeSettings:   $("#closeSettings"),
   settingsForm:    $("#settingsForm"),
-  serverUrl:       $("#serverUrl"),
+  cosSecretId:     $("#cosSecretId"),
+  cosSecretKey:    $("#cosSecretKey"),
+  cosBucket:       $("#cosBucket"),
+  cosRegion:       $("#cosRegion"),
   settingsStatus:  $("#settingsStatus")
 };
 
@@ -486,40 +489,11 @@ function closeSettingsPanel() {
   el.settingsStatus.textContent = "";
 }
 
-async function loadSettingsForm() {
-  try {
-    const cfg = await window.appConfig.get();
-    el.serverUrl.value = cfg.serverUrl || "";
-  } catch (err) { /* ignore */ }
-}
+function loadSettingsForm() { /* no config needed */ }
 
 el.settingsBtn.addEventListener("click", openSettings);
 el.closeSettings.addEventListener("click", closeSettingsPanel);
 el.settingsBackdrop.addEventListener("click", closeSettingsPanel);
-
-el.settingsForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const url = el.serverUrl.value.trim().replace(/\/$/, "");
-  if (!url) {
-    el.settingsStatus.textContent = "请输入服务器地址";
-    el.settingsStatus.className = "settings-status settings-status--error";
-    return;
-  }
-  el.settingsStatus.textContent = "正在连接…";
-  el.settingsStatus.className = "settings-status settings-status--info";
-  try {
-    const res = await fetch(`${url}/`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    await window.appConfig.save({ serverUrl: url });
-    el.settingsStatus.textContent = "连接成功！";
-    el.settingsStatus.className = "settings-status settings-status--success";
-    await reloadPrompts("");
-    toast("同步已就绪", "success");
-  } catch (err) {
-    el.settingsStatus.textContent = `连接失败：${err.message}`;
-    el.settingsStatus.className = "settings-status settings-status--error";
-  }
-});
 
 // Keyboard shortcuts
 document.addEventListener("keydown", (e) => {
