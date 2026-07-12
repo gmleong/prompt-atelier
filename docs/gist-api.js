@@ -166,3 +166,6 @@ const appConfig = {
     return { ok: true, gistId: gist.id };
   }
 };
+
+window.promptStore = promptStore;
+window.appConfig = appConfig;
