@@ -170,7 +170,7 @@
           </button>
         </div>
         <div class="overlay__scroll">
-          <p class="settings-hint">通过腾讯云 COS 同步数据。在 <a href="https://console.cloud.tencent.com/cam/capi" target="_blank">腾讯云 API 密钥</a> 获取 SecretId 和 SecretKey，然后创建 COS 存储桶。</p>
+          <p class="settings-hint">使用腾讯云 COS 存储桶同步数据。在 <a href="https://console.cloud.tencent.com/cam/capi" target="_blank">API 密钥管理</a> 获取密钥。</p>
           <form id="settingsForm" class="editor-form">
             <div class="field">
               <label class="field__label" for="cosSecretId">SecretId</label>
@@ -191,7 +191,7 @@
               </div>
             </div>
             <div class="form-actions">
-              <button type="submit" class="btn btn--primary btn--full">保存设置</button>
+              <button type="submit" class="btn btn--primary btn--full">保存并同步</button>
             </div>
             <p id="settingsStatus" class="settings-status"></p>
           </form>
@@ -203,7 +203,7 @@
     <div id="toastContainer" class="toast-container" aria-live="polite"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/cos-js-sdk-v5/dist/cos-js-sdk-v5.min.js"></script>
-    <script src="./cos-api.js"></script>
+    <script src="./api.js"></script>
     <script src="./app.js"></script>
   </body>
 </html>

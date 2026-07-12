@@ -50,10 +50,7 @@ const el = {
   settingsBackdrop:$("#settingsBackdrop"),
   closeSettings:   $("#closeSettings"),
   settingsForm:    $("#settingsForm"),
-  cosSecretId:     $("#cosSecretId"),
-  cosSecretKey:    $("#cosSecretKey"),
-  cosBucket:       $("#cosBucket"),
-  cosRegion:       $("#cosRegion"),
+  serverUrl:       $("#serverUrl"),
   settingsStatus:  $("#settingsStatus")
 };
 
@@ -492,13 +489,8 @@ function closeSettingsPanel() {
 async function loadSettingsForm() {
   try {
     const cfg = await window.appConfig.get();
-    el.cosSecretId.value = cfg.secretId || "";
-    el.cosSecretKey.value = cfg.secretKey || "";
-    el.cosBucket.value = cfg.bucket || "";
-    el.cosRegion.value = cfg.region || "ap-guangzhou";
-  } catch (err) {
-    // appConfig not available (e.g. in PWA mode) — ignore
-  }
+    el.serverUrl.value = cfg.serverUrl || "";
+  } catch (err) { /* ignore */ }
 }
 
 el.settingsBtn.addEventListener("click", openSettings);
@@ -507,25 +499,24 @@ el.settingsBackdrop.addEventListener("click", closeSettingsPanel);
 
 el.settingsForm.addEventListener("submit", async (e) => {
   e.preventDefault();
-  const cfg = {
-    secretId: el.cosSecretId.value.trim(),
-    secretKey: el.cosSecretKey.value.trim(),
-    bucket: el.cosBucket.value.trim(),
-    region: el.cosRegion.value.trim() || "ap-guangzhou"
-  };
-  if (!cfg.secretId || !cfg.secretKey || !cfg.bucket) {
-    el.settingsStatus.textContent = "请填写完整的 COS 配置";
+  const url = el.serverUrl.value.trim().replace(/\/$/, "");
+  if (!url) {
+    el.settingsStatus.textContent = "请输入服务器地址";
     el.settingsStatus.className = "settings-status settings-status--error";
     return;
   }
+  el.settingsStatus.textContent = "正在连接…";
+  el.settingsStatus.className = "settings-status settings-status--info";
   try {
-    await window.appConfig.save(cfg);
-    el.settingsStatus.textContent = "设置已保存";
+    const res = await fetch(`${url}/`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    await window.appConfig.save({ serverUrl: url });
+    el.settingsStatus.textContent = "连接成功！";
     el.settingsStatus.className = "settings-status settings-status--success";
     await reloadPrompts("");
-    toast("设置已保存", "success");
+    toast("同步已就绪", "success");
   } catch (err) {
-    el.settingsStatus.textContent = `保存失败：${err.message}`;
+    el.settingsStatus.textContent = `连接失败：${err.message}`;
     el.settingsStatus.className = "settings-status settings-status--error";
   }
 });

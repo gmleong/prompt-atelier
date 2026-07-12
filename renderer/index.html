@@ -170,28 +170,14 @@
           </button>
         </div>
         <div class="overlay__scroll">
-          <p class="settings-hint">通过腾讯云 COS 同步数据。在 <a href="https://console.cloud.tencent.com/cam/capi" target="_blank">腾讯云 API 密钥</a> 获取 SecretId 和 SecretKey，然后创建 COS 存储桶。</p>
+          <p class="settings-hint">部署后端服务后，填入服务器地址即可自动同步。详见 <a href="https://github.com/gmleong/prompt-atelier" target="_blank">部署说明</a>。</p>
           <form id="settingsForm" class="editor-form">
             <div class="field">
-              <label class="field__label" for="cosSecretId">SecretId</label>
-              <input id="cosSecretId" type="password" placeholder="AKIDxxxxxxxx" autocomplete="off" />
-            </div>
-            <div class="field">
-              <label class="field__label" for="cosSecretKey">SecretKey</label>
-              <input id="cosSecretKey" type="password" placeholder="xxxxxxxx" autocomplete="off" />
-            </div>
-            <div class="form-row form-row--2col">
-              <div class="field">
-                <label class="field__label" for="cosBucket">Bucket</label>
-                <input id="cosBucket" type="text" placeholder="mybucket-1250000000" />
-              </div>
-              <div class="field">
-                <label class="field__label" for="cosRegion">Region</label>
-                <input id="cosRegion" type="text" placeholder="ap-guangzhou" />
-              </div>
+              <label class="field__label" for="serverUrl">服务器地址</label>
+              <input id="serverUrl" type="text" placeholder="https://your-app.onrender.com" autocomplete="off" />
             </div>
             <div class="form-actions">
-              <button type="submit" class="btn btn--primary btn--full">保存设置</button>
+              <button type="submit" class="btn btn--primary btn--full">保存并同步</button>
             </div>
             <p id="settingsStatus" class="settings-status"></p>
           </form>

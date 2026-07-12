@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════
-   COS API — browser-side data layer (PWA)
-   Uses cos-js-sdk-v5 loaded from CDN
+   COS Data Layer — 直接用腾讯云 COS 存储 prompts.json
+   Works on both desktop (Electron) and mobile (PWA)
    ═══════════════════════════════════════════════════════════════ */
 
 const DATA_FILE = "prompts.json";
@@ -12,11 +12,11 @@ function getConfig() {
   } catch { return { secretId: "", secretKey: "", bucket: "", region: "ap-guangzhou" }; }
 }
 
-function saveConfig(cfg) {
+function saveConfigLocal(cfg) {
   localStorage.setItem(CFG_KEY, JSON.stringify(cfg));
 }
 
-function cachePrompts(prompts) {
+function cache(prompts) {
   try { localStorage.setItem("prompts-cache", JSON.stringify(prompts)); } catch { /* ignore */ }
 }
 
@@ -30,10 +30,7 @@ function readCache() {
 function getCos() {
   const cfg = getConfig();
   if (!cfg.secretId || !cfg.secretKey) return null;
-  return new COS({
-    SecretId: cfg.secretId,
-    SecretKey: cfg.secretKey
-  });
+  return new COS({ SecretId: cfg.secretId, SecretKey: cfg.secretKey });
 }
 
 function cosGet() {
@@ -41,15 +38,10 @@ function cosGet() {
     const cos = getCos();
     const cfg = getConfig();
     if (!cos || !cfg.bucket) return reject(new Error("COS 未配置"));
-    cos.getObject({
-      Bucket: cfg.bucket, Region: cfg.region, Key: DATA_FILE
-    }, (err, data) => {
+    cos.getObject({ Bucket: cfg.bucket, Region: cfg.region, Key: DATA_FILE }, (err, data) => {
+      if (err && err.statusCode === 404) return resolve([]);
       if (err) return reject(err);
-      try {
-        resolve(JSON.parse(data.Body));
-      } catch {
-        resolve(null);
-      }
+      try { resolve(JSON.parse(data.Body)); } catch { resolve([]); }
     });
   });
 }
@@ -62,74 +54,61 @@ function cosPut(prompts) {
     cos.putObject({
       Bucket: cfg.bucket, Region: cfg.region, Key: DATA_FILE,
       Body: JSON.stringify(prompts, null, 2)
-    }, (err) => {
-      if (err) return reject(err);
-      resolve();
-    });
+    }, (err) => { if (err) return reject(err); resolve(); });
   });
 }
 
-/* ── Public API (mirrors window.promptStore) ─────────────────── */
+/* ── Public API ──────────────────────────────────────────────── */
 const promptStore = {
   async list() {
     const cached = readCache();
     const cfg = getConfig();
     if (cfg.secretId && cfg.bucket) {
-      cosGet().then(prompts => {
-        if (prompts) cachePrompts(prompts);
-      }).catch(err => console.error("COS pull failed:", err.message));
+      cosGet().then(p => { if (p) cache(p); })
+        .catch(err => console.error("COS pull:", err.message));
     }
     return cached || [];
   },
 
   async save(prompt) {
     const cfg = getConfig();
-    if (!cfg.secretId || !cfg.bucket) throw new Error("未配置 COS");
+    if (!cfg.secretId || !cfg.bucket) throw new Error("请先配置 COS");
 
     let prompts = readCache() || [];
     const now = new Date().toISOString();
     const tags = Array.isArray(prompt.tags) ? prompt.tags.filter(Boolean) : [];
-
-    const nextPrompt = {
+    const next = {
       id: prompt.id || crypto.randomUUID(),
       title: String(prompt.title || "").trim(),
       category: String(prompt.category || "").trim() || "未分类",
-      tags,
-      content: String(prompt.content || "").trim(),
+      tags, content: String(prompt.content || "").trim(),
       notes: String(prompt.notes || "").trim(),
       image: String(prompt.image || "").trim(),
-      createdAt: prompt.createdAt || now,
-      updatedAt: now
+      createdAt: prompt.createdAt || now, updatedAt: now
     };
+    const idx = prompts.findIndex((item) => item.id === next.id);
+    if (idx >= 0) prompts[idx] = next; else prompts.unshift(next);
 
-    const index = prompts.findIndex((item) => item.id === nextPrompt.id);
-    if (index >= 0) {
-      prompts[index] = nextPrompt;
-    } else {
-      prompts.unshift(nextPrompt);
-    }
-
-    cachePrompts(prompts);
-    cosPut(prompts).catch(err => console.error("COS push failed:", err.message));
+    cache(prompts);
+    cosPut(prompts).catch(err => console.error("COS push:", err.message));
     return prompts;
   },
 
   async remove(id) {
     const cfg = getConfig();
-    if (!cfg.secretId || !cfg.bucket) throw new Error("未配置 COS");
+    if (!cfg.secretId || !cfg.bucket) throw new Error("请先配置 COS");
 
     let prompts = readCache() || [];
     prompts = prompts.filter((item) => item.id !== id);
-
-    cachePrompts(prompts);
-    cosPut(prompts).catch(err => console.error("COS push failed:", err.message));
+    cache(prompts);
+    cosPut(prompts).catch(err => console.error("COS push:", err.message));
     return prompts;
   }
 };
 
 const appConfig = {
   get() { return Promise.resolve(getConfig()); },
-  save(cfg) { saveConfig(cfg); return Promise.resolve({ ok: true }); }
+  save(cfg) { saveConfigLocal(cfg); return Promise.resolve({ ok: true }); }
 };
 
 window.promptStore = promptStore;
