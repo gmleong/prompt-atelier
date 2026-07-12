@@ -109,6 +109,20 @@
       const token = $("#token").value.trim();
       const gistId = $("#gistId").value.trim();
       if (!token) return show("请输入 Token", "error");
+      if (!gistId) return show("请先自动创建或手动填入 Gist ID", "error");
+
+      // Verify the Gist is accessible before saving
+      show("验证 Gist 连接…", "success");
+      try {
+        const res = await fetch(`https://api.github.com/gists/${gistId}`, {
+          headers: { Authorization: `token ${token}`, Accept: "application/vnd.github.v3+json" }
+        });
+        if (!res.ok) throw new Error(`无法访问 Gist (${res.status})`);
+      } catch (err) {
+        show(`连接失败：${err.message}`, "error");
+        return;
+      }
+
       try {
         await appConfig.save({ token, gistId });
         location.replace("./index.html");
