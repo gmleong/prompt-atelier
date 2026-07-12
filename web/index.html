@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Prompt Atelier</title>
+    <meta name="description" content="本地提示词库工作台" />
+    <meta name="theme-color" content="#C41E3A" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Prompt Atelier" />
+    <link rel="manifest" href="manifest.json" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Cormorant+Garamond:ital,wght@0,300;0,500;0,700;1,300;1,500&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Manrope:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="ambient" aria-hidden="true">
+      <div class="ambient__orb ambient__orb--1"></div>
+      <div class="ambient__orb ambient__orb--2"></div>
+    </div>
+
+    <div class="shell">
+      <!-- ═══ Titlebar ═══ -->
+      <header class="titlebar" role="banner">
+        <div class="titlebar__center" style="position:static;transform:none;margin:0 auto 0 14px;">
+          <span class="titlebar__mark" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+          </span>
+          <h1 class="titlebar__title">Prompt Atelier</h1>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;">
+          <button id="settingsBtn" class="icon-btn" type="button" aria-label="设置" title="同步设置">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </button>
+          <button id="themeToggle" class="icon-btn" type="button" aria-label="切换深色模式" title="切换深色模式">
+            <svg class="icon-sun" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            <svg class="icon-moon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- ═══ Search Bar ═══ -->
+      <div class="search-bar">
+        <div class="search-bar__field">
+          <svg class="search-bar__icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="searchInput" type="search" placeholder="搜索标题、标签、内容…" aria-label="搜索提示词" />
+        </div>
+        <div class="search-bar__filter">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          <select id="categoryFilter" aria-label="按分类筛选">
+            <option value="">全部分类</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- ═══ Card Grid ═══ -->
+      <main class="main-scroll">
+        <div class="section-head">
+          <p class="overline">Library</p>
+          <span id="resultCount" class="badge" aria-live="polite"></span>
+        </div>
+        <div id="promptList" class="card-grid" role="listbox" aria-label="提示词列表"></div>
+      </main>
+
+      <!-- ═══ FAB ═══ -->
+      <button id="fabNew" class="fab" type="button" aria-label="新建提示词" title="新建提示词">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+    </div>
+
+    <!-- ═══ Editor Overlay ═══ -->
+    <div id="editorOverlay" class="overlay" aria-hidden="true">
+      <div class="overlay__backdrop" id="overlayBackdrop"></div>
+      <div class="overlay__panel">
+        <div class="overlay__head">
+          <h2 id="editorTitle" class="overlay__title">新建提示词</h2>
+          <div class="overlay__actions">
+            <button id="deleteButton" class="btn btn--ghost btn--xs btn--danger" type="button" disabled aria-label="删除">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            </button>
+            <button id="closeEditor" class="icon-btn" type="button" aria-label="关闭编辑器">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="overlay__scroll">
+          <!-- Preview -->
+          <div class="preview-card">
+            <div class="preview-card__head">
+              <span id="previewCategory" class="chip">未分类</span>
+            </div>
+            <div id="previewImage" class="preview-card__image" style="display:none">
+              <img src="" alt="预览图" />
+            </div>
+            <h3 id="previewTitle" class="preview-card__title">未命名提示词</h3>
+            <p id="previewBody" class="preview-card__body">填写内容后这里会同步显示摘要。</p>
+            <div id="previewTags" class="tag-row">
+              <span class="tag">还没有标签</span>
+            </div>
+          </div>
+
+          <!-- Form -->
+          <form id="promptForm" class="editor-form" novalidate>
+            <div class="field">
+              <label class="field__label" for="titleInput">标题</label>
+              <input id="titleInput" name="title" type="text" required placeholder="给提示词起个名字" />
+            </div>
+
+            <div class="form-row form-row--2col">
+              <div class="field">
+                <label class="field__label" for="categoryInput">分类</label>
+                <input id="categoryInput" name="category" type="text" placeholder="如：写作" />
+              </div>
+              <div class="field">
+                <label class="field__label" for="tagsInput">标签</label>
+                <input id="tagsInput" name="tags" type="text" placeholder="逗号分隔" />
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="field__label" for="contentInput">内容</label>
+              <textarea id="contentInput" name="content" rows="8" required placeholder="编写提示词正文…"></textarea>
+            </div>
+
+            <div class="field">
+              <label class="field__label">图片</label>
+              <div class="image-upload">
+                <input id="imageInput" type="file" accept="image/*" hidden />
+                <div id="imageDropZone" class="image-upload__drop">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                  <span>拖放图片或点击选择</span>
+                </div>
+                <div id="imagePreview" class="image-upload__preview" style="display:none">
+                  <img src="" alt="图片预览" />
+                  <button id="removeImage" type="button" class="image-upload__remove" aria-label="移除图片">&times;</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="field__label" for="notesInput">备注</label>
+              <textarea id="notesInput" name="notes" rows="2" placeholder="使用场景等"></textarea>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn--primary btn--full">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                保存
+              </button>
+              <button type="button" id="duplicateButton" class="btn btn--ghost">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                复制
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ Settings Overlay ═══ -->
+    <div id="settingsOverlay" class="overlay" aria-hidden="true">
+      <div class="overlay__backdrop" id="settingsBackdrop"></div>
+      <div class="overlay__panel">
+        <div class="overlay__head">
+          <h2 class="overlay__title">同步设置</h2>
+          <button id="closeSettings" class="icon-btn" type="button" aria-label="关闭设置">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="overlay__scroll">
+          <p class="settings-hint">通过 GitHub Gist 同步数据到手机。需要创建一个 <a href="https://github.com/settings/tokens" target="_blank">Personal Access Token</a>，勾选 <strong>gist</strong> 权限。</p>
+          <form id="settingsForm" class="editor-form">
+            <div class="field">
+              <label class="field__label" for="ghToken">GitHub Token</label>
+              <input id="ghToken" type="password" placeholder="ghp_xxxxxxxxxxxx" autocomplete="off" />
+            </div>
+            <div class="field">
+              <label class="field__label" for="ghGistId">Gist ID</label>
+              <input id="ghGistId" type="text" placeholder="留空自动创建" />
+            </div>
+            <div class="form-actions">
+              <button type="button" id="autoCreateBtn" class="btn btn--primary btn--full">自动创建 Gist</button>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn--ghost btn--full">保存设置</button>
+            </div>
+            <p id="settingsStatus" class="settings-status"></p>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+    <script src="./gist-api.js"></script>
+    <script src="./app.js"></script>
+    <script>
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("sw.js").catch(() => {});
+      }
+    </script>
+  </body>
+</html>

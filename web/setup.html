@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prompt Atelier — 首次设置</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #F5F5F5;
+      color: #1F2937;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+    }
+    .setup {
+      width: 100%;
+      max-width: 380px;
+      background: #FFFFFF;
+      border-radius: 16px;
+      padding: 32px 24px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    }
+    h1 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+    .sub { font-size: 13px; color: #6B7280; margin-bottom: 20px; }
+    .hint {
+      font-size: 12px; color: #6B7280; margin-bottom: 16px; padding: 10px;
+      background: #F3F4F6; border-radius: 8px; line-height: 1.6;
+    }
+    .hint a { color: #C41E3A; font-weight: 600; }
+    label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #6B7280; margin-bottom: 4px; }
+    input { width: 100%; padding: 10px 12px; border: 1px solid #E5E7EB; border-radius: 8px; font-size: 13px; margin-bottom: 12px; background: #F9FAFB; }
+    input:focus { outline: none; border-color: #C41E3A; box-shadow: 0 0 0 3px rgba(196,30,58,0.08); }
+    button {
+      width: 100%; padding: 11px; border: 0; border-radius: 24px;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      margin-bottom: 8px; transition: all 0.15s ease;
+    }
+    .btn-primary { background: linear-gradient(135deg, #C41E3A, #D4464F); color: #FFF; }
+    .btn-ghost { background: #F3F4F6; color: #1F2937; border: 1px solid #E5E7EB; }
+    button:hover { transform: translateY(-1px); }
+    button:disabled { opacity: 0.5; transform: none; }
+    .status { font-size: 11px; text-align: center; margin-top: 8px; padding: 6px; border-radius: 6px; }
+    .status--error { color: #DC2626; background: rgba(220,38,38,0.06); }
+    .status--success { color: #16A34A; background: rgba(22,163,74,0.06); }
+    .skip { display: block; text-align: center; font-size: 11px; color: #9CA3AF; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <div class="setup">
+    <h1>&#128221; Prompt Atelier</h1>
+    <p class="sub">首次使用 · 配置 GitHub 同步</p>
+    <div class="hint">
+      需要一个 GitHub <a href="https://github.com/settings/tokens" target="_blank">Personal Access Token</a>（classic），勾选 <strong>gist</strong> 权限即可。
+    </div>
+    <form id="form">
+      <label for="token">GitHub Token</label>
+      <input id="token" type="password" placeholder="ghp_xxxxxxxxxxxx" autocomplete="off" required />
+      <label for="gistId">Gist ID（可选）</label>
+      <input id="gistId" type="text" placeholder="已有 Gist 就填，否则自动创建" />
+      <button type="button" id="autoBtn" class="btn-primary">自动创建 Gist</button>
+      <button type="submit" class="btn-ghost">保存并开始使用</button>
+    </form>
+    <p id="status" class="status" style="display:none"></p>
+    <a href="./index.html" class="skip">跳过，先离线使用</a>
+  </div>
+
+  <script src="./gist-api.js"></script>
+  <script>
+    const $ = (s) => document.querySelector(s);
+    const status = $("#status");
+
+    function show(msg, cls) {
+      status.textContent = msg;
+      status.className = `status status--${cls}`;
+      status.style.display = "block";
+    }
+
+    // If already configured, redirect
+    appConfig.get().then((cfg) => {
+      if (cfg.token && cfg.gistId) location.replace("./index.html");
+    });
+
+    $("#autoBtn").addEventListener("click", async () => {
+      const token = $("#token").value.trim();
+      if (!token) return show("请先输入 Token", "error");
+      $("#autoBtn").disabled = true;
+      show("正在创建 Gist…", "success");
+      try {
+        const result = await appConfig.ensureGist(token);
+        if (result.ok) {
+          $("#gistId").value = result.gistId;
+          show("Gist 创建成功！点击下方按钮保存。", "success");
+        } else {
+          throw new Error(result.error);
+        }
+      } catch (err) {
+        show(`创建失败：${err.message}`, "error");
+      } finally {
+        $("#autoBtn").disabled = false;
+      }
+    });
+
+    $("#form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const token = $("#token").value.trim();
+      const gistId = $("#gistId").value.trim();
+      if (!token) return show("请输入 Token", "error");
+      try {
+        await appConfig.save({ token, gistId });
+        location.replace("./index.html");
+      } catch (err) {
+        show(`保存失败：${err.message}`, "error");
+      }
+    });
+  </script>
+</body>
+</html>
