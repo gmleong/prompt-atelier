@@ -281,6 +281,10 @@ ipcMain.handle("prompts:delete", async (_event, id) => {
 
 /* ── App lifecycle ───────────────────────────────────────────── */
 app.whenReady().then(() => {
+  // Set Dock icon (macOS)
+  if (process.platform === "darwin" && app.dock) {
+    app.dock.setIcon(path.join(__dirname, "assets", "icon.icns"));
+  }
   createWindow();
 
   app.on("activate", () => {
