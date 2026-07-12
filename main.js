@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, nativeTheme } = require("electron");
+const { app, BrowserWindow, ipcMain, nativeTheme, nativeImage } = require("electron");
 const fs = require("fs");
 const path = require("path");
 
@@ -283,7 +283,12 @@ ipcMain.handle("prompts:delete", async (_event, id) => {
 app.whenReady().then(() => {
   // Set Dock icon (macOS)
   if (process.platform === "darwin" && app.dock) {
-    app.dock.setIcon(path.join(__dirname, "assets", "icon.icns"));
+    try {
+      const icon = nativeImage.createFromPath(path.join(__dirname, "assets", "icon_1024.png"));
+      app.dock.setIcon(icon);
+    } catch (err) {
+      console.error("Failed to set dock icon:", err.message);
+    }
   }
   createWindow();
 
