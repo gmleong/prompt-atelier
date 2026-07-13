@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      display: flex; align-items: center; justify-content: center;
+      width: 56px; height: 56px; cursor: pointer;
+      -webkit-app-region: drag;
+      background: transparent;
+    }
+    .ball {
+      width: 48px; height: 48px; border-radius: 50%;
+      overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+      transition: transform 0.15s ease;
+    }
+    .ball:active { transform: scale(0.95); }
+    img { width: 100%; height: 100%; object-fit: cover; }
+  </style>
+</head>
+<body>
+  <div class="ball">
+    <img src="icon_1024.png" alt="" />
+  </div>
+</body>
+</html>

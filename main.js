@@ -1,4 +1,4 @@
-const { app, BrowserWindow, nativeTheme, nativeImage, Tray, Menu, screen } = require("electron");
+const { app, BrowserWindow, nativeTheme, nativeImage, screen } = require("electron");
 const path = require("path");
 
 const APP_FILE = path.join(__dirname, "renderer", "index.html");
@@ -68,36 +68,19 @@ function createBall() {
     }
   });
 
-  // Load ball HTML with app icon
-  ballWin.loadURL(`data:text/html,
-    <html><head><style>
-      *{margin:0;padding:0;box-sizing:border-box}
-      body{display:flex;align-items:center;justify-content:center;width:56px;height:56px;cursor:pointer;-webkit-app-region:drag}
-      .ball{
-        width:48px;height:48px;border-radius:50%;
-        background:linear-gradient(135deg,#C41E3A,#D4464F);
-        box-shadow:0 4px 16px rgba(196,30,58,0.4);
-        display:flex;align-items:center;justify-content:center;
-        transition:transform 0.15s ease;
+  ballWin.loadFile(path.join(__dirname, "assets", "ball.html"));
+
+  // Native click — no IPC needed
+  ballWin.webContents.on("before-input-event", (event, input) => {
+    if (input.type === "mouseDown") {
+      event.preventDefault();
+      if (mainWin) {
+        mainWin.show();
+        mainWin.focus();
+        hideBall();
       }
-      .ball:hover{transform:scale(1.1)}
-      svg{width:22px;height:22px}
-    </style></head>
-    <body>
-      <div class="ball">
-        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
-          <path d="m15 5 4 4"/>
-        </svg>
-      </div>
-      <script>
-        const {ipcRenderer} = require("electron");
-        document.querySelector(".ball").addEventListener("click",()=>{
-          ipcRenderer.send("ball-click");
-        });
-      </script>
-    </body></html>
-  `);
+    }
+  });
 }
 
 function showBall() {
@@ -120,16 +103,6 @@ function destroyBall() {
     ballWin = null;
   }
 }
-
-/* ── IPC ─────────────────────────────────────────────────────── */
-const { ipcMain } = require("electron");
-ipcMain.on("ball-click", () => {
-  if (mainWin) {
-    mainWin.show();
-    mainWin.focus();
-    hideBall();
-  }
-});
 
 /* ── App lifecycle ───────────────────────────────────────────── */
 app.isQuitting = false;
