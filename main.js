@@ -60,8 +60,9 @@ function createBall() {
     transparent: true,
     alwaysOnTop: true,
     resizable: false,
-    hasShadow: true,
+    hasShadow: false,
     skipTaskbar: true,
+    backgroundColor: "#00000000",
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false
