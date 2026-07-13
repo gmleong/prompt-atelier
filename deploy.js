@@ -15,8 +15,6 @@ const REGION = "ap-guangzhou";
 const DOCS_DIR = path.join(__dirname, "docs");
 
 // Read .env file
-const fs = require("fs");
-const path = require("path");
 const envPath = path.join(__dirname, ".env");
 if (fs.existsSync(envPath)) {
   fs.readFileSync(envPath, "utf8").split("\n").forEach(line => {
