@@ -1,10 +1,8 @@
 /* ═══════════════════════════════════════════════════════════════
-   COS Data Layer — 无认证，直接 REST 读写
-   存储桶需开启静态网站托管 + 公开读写权限
+   COS Data Layer — local-first, instant response
+   Reads/writes cache instantly, syncs COS in background
    ═══════════════════════════════════════════════════════════════ */
 
-// 部署时改成你自己的 COS 存储桶地址
-// 网页托管在 GitHub Pages，数据读写走 COS
 const DATA_URL = "https://prompt-hub-1302053645.cos.ap-guangzhou.myqcloud.com/prompts.json";
 
 function cache(prompts) {
@@ -12,39 +10,32 @@ function cache(prompts) {
 }
 
 function readCache() {
-  try {
-    const raw = localStorage.getItem("prompts-cache");
-    return raw ? JSON.parse(raw) : null;
-  } catch { return null; }
+  try { const r = localStorage.getItem("prompts-cache"); return r ? JSON.parse(r) : null; } catch { return null; }
 }
 
-async function fetchJSON(url, opts = {}) {
-  const res = await fetch(url, {
-    ...opts,
-    headers: { "Content-Type": "application/json", ...(opts.headers || {}) }
-  });
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`${res.status}: ${text.slice(0, 100)}`);
-  }
-  return res.json();
+async function cosGet() {
+  const res = await fetch(DATA_URL);
+  if (!res.ok) throw new Error(`${res.status}`);
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
+
+async function cosPut(prompts) {
+  await fetch(DATA_URL, { method: "PUT", body: JSON.stringify(prompts, null, 2), headers: { "Content-Type": "application/json" } });
 }
 
 /* ── Public API ──────────────────────────────────────────────── */
 const promptStore = {
   async list() {
     const cached = readCache();
-    fetchJSON(DATA_URL).then(p => { if (Array.isArray(p)) cache(p); })
-      .catch(err => console.error("COS pull:", err.message));
+    // Background sync from COS
+    cosGet().then(p => { if (p.length) cache(p); }).catch(e => console.error("COS pull:", e.message));
     return cached || [];
   },
 
   async save(prompt) {
-    // Read latest from COS first
-    let prompts = [];
-    try { prompts = await fetchJSON(DATA_URL); } catch { /* use cache */ }
-    if (!Array.isArray(prompts)) prompts = readCache() || [];
-
+    // Work on local cache instantly
+    let prompts = readCache() || [];
     const now = new Date().toISOString();
     const tags = Array.isArray(prompt.tags) ? prompt.tags.filter(Boolean) : [];
     const next = {
@@ -59,23 +50,21 @@ const promptStore = {
     const idx = prompts.findIndex((item) => item.id === next.id);
     if (idx >= 0) prompts[idx] = next; else prompts.unshift(next);
 
-    // Write back to COS
-    await fetchJSON(DATA_URL, { method: "PUT", body: JSON.stringify(prompts, null, 2) });
+    // Save locally instantly, push to COS in background
     cache(prompts);
+    cosPut(prompts).catch(e => console.error("COS push:", e.message));
     return prompts;
   },
 
   async remove(id) {
-    let prompts = [];
-    try { prompts = await fetchJSON(DATA_URL); } catch { prompts = readCache() || []; }
+    let prompts = readCache() || [];
     prompts = prompts.filter((item) => item.id !== id);
-    await fetchJSON(DATA_URL, { method: "PUT", body: JSON.stringify(prompts, null, 2) });
     cache(prompts);
+    cosPut(prompts).catch(e => console.error("COS push:", e.message));
     return prompts;
   }
 };
 
-// 移除设置面板依赖 — app 直接可用
 const appConfig = {
   get() { return Promise.resolve({}); },
   save() { return Promise.resolve({ ok: true }); }
