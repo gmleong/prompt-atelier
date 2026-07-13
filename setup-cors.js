@@ -5,10 +5,21 @@ const COS = require("cos-nodejs-sdk-v5");
 const BUCKET = "prompt-hub-1302053645";
 const REGION = "ap-guangzhou";
 
+// Read .env file
+const fs = require("fs");
+const path = require("path");
+const envPath = path.join(__dirname, ".env");
+if (fs.existsSync(envPath)) {
+  fs.readFileSync(envPath, "utf8").split("\n").forEach(line => {
+    const m = line.match(/^([A-Z_]+)=(.*)$/);
+    if (m) process.env[m[1]] = m[2].trim();
+  });
+}
+
 const secretId = process.env.COS_SECRET_ID;
 const secretKey = process.env.COS_SECRET_KEY;
 if (!secretId || !secretKey) {
-  console.error("请先设置: export COS_SECRET_ID=xxx COS_SECRET_KEY=xxx");
+  console.error("请在 .env 文件中填入 COS 密钥");
   process.exit(1);
 }
 
