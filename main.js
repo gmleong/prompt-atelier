@@ -1,10 +1,11 @@
-const { app, BrowserWindow, nativeTheme, nativeImage, screen } = require("electron");
+const { app, BrowserWindow, nativeTheme, nativeImage, Tray, Menu, screen } = require("electron");
 const path = require("path");
 
 const APP_FILE = path.join(__dirname, "renderer", "index.html");
 
 let mainWin = null;
-let ballWin = null;
+let tray = null;
+let isQuitting = false;
 
 function createMainWindow() {
   mainWin = new BrowserWindow({
@@ -24,118 +25,64 @@ function createMainWindow() {
 
   mainWin.loadFile(APP_FILE);
 
-  // Minimize → show floating ball
-  mainWin.on("minimize", () => {
-    showBall();
+  // Minimize to tray instead of dock
+  mainWin.on("minimize", (e) => {
+    e.preventDefault();
+    mainWin.hide();
   });
 
-  // Close → hide to ball instead of quitting
+  // Close → hide to tray
   mainWin.on("close", (e) => {
-    if (!app.isQuitting) {
+    if (!isQuitting) {
       e.preventDefault();
       mainWin.hide();
-      showBall();
-    }
-  });
-
-  mainWin.on("restore", () => {
-    hideBall();
-  });
-
-  mainWin.on("show", () => {
-    hideBall();
-  });
-}
-
-function createBall() {
-  const { width: screenW, height: screenH } = screen.getPrimaryDisplay().workAreaSize;
-  const ballSize = 56;
-
-  ballWin = new BrowserWindow({
-    width: ballSize,
-    height: ballSize,
-    x: screenW - ballSize - 20,
-    y: screenH - ballSize - 20,
-    frame: false,
-    transparent: true,
-    alwaysOnTop: true,
-    resizable: false,
-    hasShadow: false,
-    skipTaskbar: true,
-    roundedCorners: false,
-    webPreferences: {
-      contextIsolation: true,
-      nodeIntegration: false
-    }
-  });
-
-  ballWin.setBackgroundColor("#00000000");
-  ballWin.setHasShadow(false);
-  ballWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-
-  ballWin.loadFile(path.join(__dirname, "assets", "ball.html"));
-
-  // Native click — no IPC needed
-  ballWin.webContents.on("before-input-event", (event, input) => {
-    if (input.type === "mouseDown") {
-      event.preventDefault();
-      if (mainWin) {
-        mainWin.show();
-        mainWin.focus();
-        hideBall();
-      }
     }
   });
 }
 
-function showBall() {
-  if (ballWin && !ballWin.isDestroyed()) {
-    ballWin.show();
-  } else {
-    createBall();
-  }
-}
+function createTray() {
+  const icon = nativeImage.createFromPath(path.join(__dirname, "assets", "icon_1024.png"));
+  const trayIcon = icon.resize({ width: 18, height: 18 });
+  tray = new Tray(trayIcon);
+  tray.setToolTip("提示词助手");
 
-function hideBall() {
-  if (ballWin && !ballWin.isDestroyed()) {
-    ballWin.hide();
-  }
-}
+  const menu = Menu.buildFromTemplate([
+    { label: "显示窗口", click: () => { mainWin.show(); mainWin.focus(); } },
+    { type: "separator" },
+    { label: "退出", click: () => { isQuitting = true; app.quit(); } }
+  ]);
+  tray.setContextMenu(menu);
 
-function destroyBall() {
-  if (ballWin && !ballWin.isDestroyed()) {
-    ballWin.destroy();
-    ballWin = null;
-  }
+  tray.on("click", () => {
+    if (mainWin.isVisible()) {
+      mainWin.hide();
+    } else {
+      mainWin.show();
+      mainWin.focus();
+    }
+  });
 }
 
 /* ── App lifecycle ───────────────────────────────────────────── */
-app.isQuitting = false;
-
 app.whenReady().then(() => {
   if (process.platform === "darwin" && app.dock) {
     try {
-      const icon = nativeImage.createFromPath(path.join(__dirname, "assets", "icon_1024.png"));
-      app.dock.setIcon(icon);
+      const dockIcon = nativeImage.createFromPath(path.join(__dirname, "assets", "icon_1024.png"));
+      app.dock.setIcon(dockIcon);
     } catch (err) {
-      console.error("Failed to set dock icon:", err.message);
+      console.error("Dock icon failed:", err.message);
     }
   }
   createMainWindow();
-  createBall();
-  hideBall(); // hidden initially
+  createTray();
 
   app.on("activate", () => {
-    if (mainWin) {
-      mainWin.show();
-      hideBall();
-    }
+    if (mainWin) { mainWin.show(); mainWin.focus(); }
   });
 });
 
 app.on("before-quit", () => {
-  app.isQuitting = true;
-  destroyBall();
+  isQuitting = true;
 });
 
 app.on("window-all-closed", () => {
