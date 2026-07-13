@@ -62,6 +62,7 @@ function createBall() {
     resizable: false,
     hasShadow: false,
     skipTaskbar: true,
+    type: "panel",
     backgroundColor: "#00000000",
     webPreferences: {
       contextIsolation: true,
