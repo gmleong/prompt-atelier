@@ -209,8 +209,7 @@ function renderList() {
   }
 
   prompts.forEach((p) => {
-    const card = document.createElement("button");
-    card.type = "button";
+    const card = document.createElement("div");
     card.className = `prompt-card${p.id === state.activeId ? " active" : ""}`;
     card.setAttribute("role", "option");
     card.setAttribute("aria-selected", p.id === state.activeId ? "true" : "false");
@@ -223,21 +222,49 @@ function renderList() {
       : "";
 
     card.innerHTML = `
-      <div class="prompt-card__header">
-        <h3 class="prompt-card__title">${escapeHtml(p.title || "未命名")}</h3>
-        <span class="chip">${escapeHtml(p.category || "未分类")}</span>
+      <div class="prompt-card__body-area">
+        <div class="prompt-card__header">
+          <h3 class="prompt-card__title">${escapeHtml(p.title || "未命名")}</h3>
+          <span class="chip">${escapeHtml(p.category || "未分类")}</span>
+        </div>
+        ${p.image ? `<div class="prompt-card__thumb"><img src="${escapeHtml(p.image)}" alt="" loading="lazy" /></div>` : ""}
+        <div class="prompt-card__snippet">${escapeHtml(preview || "暂无内容")}</div>
+        ${notesPreview ? `<div class="prompt-card__note">${escapeHtml(notesPreview)}</div>` : ""}
+        ${tagMarkup ? `<div class="tag-row">${tagMarkup}</div>` : ""}
       </div>
-      ${p.image ? `<div class="prompt-card__thumb"><img src="${escapeHtml(p.image)}" alt="" loading="lazy" /></div>` : ""}
-      <div class="prompt-card__snippet">${escapeHtml(preview || "暂无内容")}</div>
-      ${notesPreview ? `<div class="prompt-card__note">${escapeHtml(notesPreview)}</div>` : ""}
-      ${tagMarkup ? `<div class="tag-row">${tagMarkup}</div>` : ""}
       <div class="prompt-card__footer">
         <span class="prompt-card__meta"><strong>更新</strong> ${escapeHtml(updatedAt)}</span>
+        <div class="prompt-card__actions">
+          <button class="card-btn card-btn--copy" data-action="copy" data-id="${escapeHtml(p.id)}" title="复制内容">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+          <button class="card-btn card-btn--delete" data-action="delete" data-id="${escapeHtml(p.id)}" title="删除">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          </button>
+        </div>
       </div>
     `;
 
-    card.addEventListener("click", () => {
+    // Click card body → open editor
+    card.querySelector(".prompt-card__body-area").addEventListener("click", () => {
       openEditor(p.id);
+    });
+
+    // Action buttons
+    card.querySelector(".card-btn--copy").addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const content = p.content || "";
+      if (!content) { toast("没有可复制的内容", "error"); return; }
+      await navigator.clipboard.writeText(content);
+      toast("已复制", "success");
+    });
+
+    card.querySelector(".card-btn--delete").addEventListener("click", async (e) => {
+      e.stopPropagation();
+      if (!confirm(`删除「${p.title || "未命名"}」？`)) return;
+      await window.promptStore.remove(p.id);
+      await reloadPrompts("");
+      toast("已删除", "info");
     });
 
     el.promptList.append(card);
