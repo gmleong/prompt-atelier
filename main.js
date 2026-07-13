@@ -62,13 +62,16 @@ function createBall() {
     resizable: false,
     hasShadow: false,
     skipTaskbar: true,
-    type: "panel",
-    backgroundColor: "#00000000",
+    roundedCorners: false,
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false
     }
   });
+
+  ballWin.setBackgroundColor("#00000000");
+  ballWin.setHasShadow(false);
+  ballWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
 
   ballWin.loadFile(path.join(__dirname, "assets", "ball.html"));
 
